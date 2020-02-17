@@ -1,0 +1,10 @@
+up-restart
+nobind
+remote 78.46.91.157 1194
+dev tun
+proto udp
+tls-client
+cert <ca.crt>
+ca <user.crt>
+key <user.key>
+pull

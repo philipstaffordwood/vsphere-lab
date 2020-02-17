@@ -1,8 +1,14 @@
 # vSphere Lab
 
+### Prerequisities
+
+* 1Password configured with the organization vault
+* OpenVPN client
+* [SOPS](https://github.com/mozilla/sops)
+
 ### Accessing the lab
 
-1. Connect to the VPN
+1. Connect to the VPN using the configuration file `config.openvpn`. Make sure to reference correctly the location of the TLS certificates. TLS certificates are stored in 1Password.
 2. Configure `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID` with access to the SOPS KMS key
 3. Decrypt the environment variables by running: `source /dev/stdin < <( sops -d --input-type binary --output-type binary lab.enc.env )`
 4. Run
