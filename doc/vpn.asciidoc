@@ -1,0 +1,160 @@
+include::sensitive-vpn.asciidoc[]
+= Flanksource Lab VPN Architecture
+:toc:
+:toc-placement!:
+
+// Front matter
+
+toc::[]
+
+== Overview
+
+The lab consists of several {boxvendor} boxes (currently {num_hosts}), each with VMWare ESX installed.
+The ESX hosts are joined into a vSphere domain with the vSphere Appliance deployed on the first ESX host.
+
+=== Host Networking Config
+
+Each host has a NIC with two assigned IPs, with an extra
+MAC address assigned to the second IP to assist with virtualized networking.
+
+The primary IP is dedicated to ESX, the secondary IP is
+assigned to the pfSense firewall VM.
+
+[plantuml, diagram-host-networking, png]
+....
+Title Host Networking
+left to right direction
+skinparam linetype ortho
+
+node "ESX box                                                            \n" {
+    card "NIC" as nic #gray {
+        card "primary MAC" as mac1 #lightgray
+        card "secondary MAC" as mac2 #lightgray
+    }
+
+    frame "ESX host  " as esx #lightgray {
+        rectangle "pfsense" as fw
+
+
+    }
+
+}
+
+cloud "\n\n     Internet        " as internet {
+    interface "Primary\nPublic IP" as ip1
+    interface "Secondary\nPublic IP" as ip2
+}
+
+
+
+fw -[#blue,bold]- mac2
+
+esx -[#darkred,bold]- mac1
+
+
+mac1 -[#darkred,bold]- ip1
+mac2 -[#blue,bold]- ip2
+
+note right of ip1
+Used for
+ESX Management
+end note
+
+note right of ip2
+Used for
+pfsense management
+and
+OpenVPN VPN
+end note
+....
+
+
+|===
+|hostname |Primary IP | Secondary IP | Extra MAC
+
+| *{box_1}* | `{ip1_1}`| `{ip2_1}` | `{mac2_1}`
+
+| *{box_2}* | `{ip1_2}` | `{ip2_2}` | `{mac2_2}`
+
+|===
+
+=== ESX Networking Config
+
+In ESX there are two vSwitches defined:
+
+* **vSwitch0** which linked to the NIC, and
+* **vSwitch1** which is not.
+
+Two port groups are defined (besides the built-in management port group):
+
+* **bridge**, which connects to the secondary IP on the NIC, and
+* **VM Network**, which is purely internal.
+
+This follows the configuration described in the pfSense Documentation for ESX <<pfSense-ESX-Documentation>>
+
+A pfSense VM is connected to both the **bridge** and **VM Network**.
+
+The pfSense VM serves as a network appliance that is used to provide various services:
+
+* It acts as a DHCP host to VMs provisioned to connect to the **VM Network**,
+* It serves as a firewall between the **VM Network** and the outside world, and
+* It acts as an OpenVPN server that is configured to connect the different ESX host VM Networks
+to each other and allows for remote access via an externally accessible VPN.
+
+[plantuml, diagram-classes, png]
+....
+skinparam linetype ortho
+
+node "ESX box                                                            \n" {
+    card "NIC" as nic #gray {
+        card "primary MAC" as mac1 #lightgray
+        card "secondary MAC" as mac2 #lightgray
+    }
+
+    frame "ESX host  " as esx #lightgray {
+        rectangle "pfsense" as fw
+        queue "bridge" as net_bridge #lightblue
+        queue "VM Network" as net_vm_net #lightgreen
+
+        collections "Other VMs" as other #lightgreen
+    }
+
+}
+
+cloud "\n\n     Internet        " as internet {
+    interface "Primary\nPublic IP" as ip1
+    interface "Secondary\nPublic IP" as ip2
+}
+
+net_vm_net -[#darkgreen,bold] fw
+
+net_vm_net -[#darkgreen,bold]- other
+
+fw -[#blue,bold]- net_bridge
+
+esx -[#darkred,bold]- mac1
+net_bridge -[#blue,bold]- mac2
+
+mac1 -[#darkred,bold]-- ip1
+mac2 -[#blue,bold]-- ip2
+....
+
+
+
+
+
+
+
+[glossary]
+== Glossary
+
+[glossary]
+DHCP::
+MAC:: A media access control address (MAC address) is a unique identifier assigned to a NIC for use as a network address in communications within a network segment.
+NIC:: A Network interface card (NIC) is a component that provides networking capabilities for a computer.
+
+
+[bibliography]
+== References
+
+- [[[pfSense-ESX-Documentation,1]]] https://docs.netgate.com/pfsense/en/latest/virtualization/virtualizing-pfsense-with-vmware-vsphere-esxi.html[*Virtualizing pfSense with VMware vSphere / ESXi*].

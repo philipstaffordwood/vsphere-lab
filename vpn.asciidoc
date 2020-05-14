@@ -1,6 +1,0 @@
-include::vpn-sensitive.adoc[]
-
-= My Title
-Version {version}
-
-My text and all that good stuff...
