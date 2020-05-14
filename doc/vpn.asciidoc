@@ -8,7 +8,7 @@ include::sensitive-vpn.asciidoc[]
 toc::[]
 
 ifdef::env-github[]
-:imagesdir: https://github.com/philipstaffordwood/vsphere-lab/blob/vpn-doc/doc/img/diagram-host-networking.png
+:imagesdir: https://github.com/philipstaffordwood/vsphere-lab/blob/vpn-doc/doc/img/
 endif::[]
 
 
