@@ -1,10 +1,69 @@
-up-restart
+# Specify that we are a client and that we
+# will be pulling certain config file directives
+# from the server.
+client
+
+# Keep trying indefinitely to resolve the
+# host name of the OpenVPN server.  Very useful
+# on machines which are not permanently connected
+# to the internet such as laptops.
+resolv-retry infinite
+
+# Most clients don't need to bind to
+# a specific local port number.
 nobind
-remote 78.46.91.157 1194
+
+# Downgrade privileges after initialization (non-Windows only)
+# TODO: maybe?
+;user nobody
+;group nobody
+
+# Try to preserve some state across restarts.
+# TODO: keep?
+persist-key
+persist-tun
+
+# Flanksource lab VPN server is at  78.46.91.157 1195
+# NOTE: 1195
+remote 78.46.91.157 1195
+
+# Flanksource lab not load balanced yet
+;remote my-server-2 1194
+# Choose a random host from the remote
+# list for load-balancing.  Otherwise
+# try hosts in the order specified.
+# Flanksource lab not load balanced yet
+;remote-random
+
+
+# Flanksource lab uses 'tun' for 'vSphere VM OpenVPN VPN'
 dev tun
+# Flanksource lab uses 'udp' for 'vSphere VM OpenVPN VPN'
 proto udp
+# Flanksource lab uses compress set to 'lz4' for 'vSphere VM OpenVPN VPN'
+compress lz4
+# Flanksource lab uses 'SHA256' for auth for 'vSphere VM OpenVPN VPN'
+auth SHA256
+# Flanksource lab uses 'AES-128-CBC' for cipher for 'vSphere VM OpenVPN VPN'
+cipher AES-128-CBC   # AES
+
+
+##################
+# SSL/TLS parms. #
+##################
+# In SSL/TLS key exchange, we assume client role.
 tls-client
-cert <ca.crt>
-ca <user.crt>
-key <user.key>
+
+# Flanksource lab uses tls for 'vSphere VM OpenVPN VPN' here is the CA,
+# Client cert and key files for the 'Remote-Access-OpenVPN-Client' client
+# Get these from 1Password
+ca ./fs-vpn-ca.crt
+cert ./fs-remote-client.crt
+key ./fs-remote-client.key
+# Flanksource lab uses tls-auth for 'vSphere VM OpenVPN VPN' here is the key
+# Get this from 1Password
+tls-auth ./tls-auth.key 1
+
+
+up-restart
 pull
