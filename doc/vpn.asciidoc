@@ -1,8 +1,8 @@
-include::sensitive-vpn.asciidoc[]
 = Flanksource Lab VPN Architecture
 :toc:
 :toc-placement!:
 
+include::sensitive-vpn.asciidoc[]
 // Front matter
 
 toc::[]
@@ -110,6 +110,10 @@ The pfSense VM serves as a network appliance that is used to provide various ser
 * It acts as an OpenVPN server that is configured to connect the different ESX host VM Networks
 to each other and allows for remote access via an externally accessible VPN.
 
+ifdef::env-github[]
+image::diagram-host-networking.png[Host Networking]
+endif::[]
+ifndef::env-github[]
 [plantuml, diagram-esx-networking, png]
 ....
 skinparam linetype ortho
@@ -147,7 +151,7 @@ net_bridge -[#blue,bold]- mac2
 mac1 -[#darkred,bold]-- ip1
 mac2 -[#blue,bold]-- ip2
 ....
-
+endif::[]
 
 
 
