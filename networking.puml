@@ -1,0 +1,55 @@
+@startuml
+Title Lab Networking\n
+
+left to right direction
+
+skinparam linetype ortho
+'skinparam padding 8
+
+
+cloud "\nInternet\n\n" as internet #lightyellow {
+    queue "VPN\n10.100.5.0/24" as vpn_net #lightgreen
+
+}
+
+internet -[hidden]down- vpn_net
+
+
+node "Remote Client" as client {
+    rectangle "OpenVPN Client" as vpn_client #lightblue
+}
+
+queue "ESX1 VM Network\n10.100.0.0/24  "  as esx1_net #lightgreen {
+}
+node "ESX1 \npfSense \nfirewall" as fw_1<<vm>> #lightblue
+
+
+queue "ESX2 VM Network\n10.100.2.0/24  " as esx2_net #lightgreen {
+}
+node "ESX2 \npfSense \nfirewall" as fw_2<<vm>> #lightblue
+
+esx1_net -- fw_1
+fw_1 -[#blue,bold]- vpn_net
+fw_1 --[#red,dashed]- internet
+
+esx2_net -- fw_2
+fw_2 -[#blue,bold]- vpn_net
+fw_2 --[#red,dashed]- internet
+
+'vpn_net -[#blue,bold] fw_2
+'fw_2 - esx2_net
+'fw_2 --[#red,dashed] internet
+
+vpn_net -[#blue,bold]-- vpn_client
+internet -[#red,dashed]-- vpn_client
+
+'client --- internet
+'fw_1 -- internet
+'fw_2 -- internet
+
+
+
+@enduml
+@startuml
+listsprite
+@enduml
