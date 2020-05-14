@@ -10,7 +10,27 @@ toc::[]
 ifdef::env-github[]
 :imagesdir: https://github.com/philipstaffordwood/vsphere-lab/blob/vpn-doc/doc/img/
 endif::[]
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
 
+ifdef::env-github[]
+[WARNING]
+.Redacted Information
+====
+If you are reading this on GitHub, note that
+sensitive and potentially sensitive information has been redacted
+from this document. These appear as placeholders `{ LABEL }`.
+
+To have this information restored locally,
+download `sensitive-vpn.asciidoc`
+from 1Password and place in `doc/`.
+====
+endif::[]
 
 == Overview
 
