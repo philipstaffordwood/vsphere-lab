@@ -7,6 +7,11 @@ include::sensitive-vpn.asciidoc[]
 
 toc::[]
 
+ifdef::env-github[]
+:imagesdir: https://github.com/philipstaffordwood/vsphere-lab/blob/vpn-doc/doc/img/diagram-host-networking.png
+endif::[]
+
+
 == Overview
 
 The lab consists of several {boxvendor} boxes (currently {num_hosts}), each with VMWare ESX installed.
@@ -20,6 +25,10 @@ MAC address assigned to the second IP to assist with virtualized networking.
 The primary IP is dedicated to ESX, the secondary IP is
 assigned to the pfSense firewall VM.
 
+ifdef::env-github[]
+image::diagram-host-networking.png[Host Networking]
+endif::[]
+ifndef::env-github[]
 [plantuml, diagram-host-networking, png]
 ....
 Title Host Networking
@@ -44,7 +53,7 @@ cloud "\n\n     Internet        " as internet {
     interface "Primary\nPublic IP" as ip1
     interface "Secondary\nPublic IP" as ip2
 }
-
+endif::[]
 
 
 fw -[#blue,bold]- mac2
@@ -101,7 +110,7 @@ The pfSense VM serves as a network appliance that is used to provide various ser
 * It acts as an OpenVPN server that is configured to connect the different ESX host VM Networks
 to each other and allows for remote access via an externally accessible VPN.
 
-[plantuml, diagram-classes, png]
+[plantuml, diagram-esx-networking, png]
 ....
 skinparam linetype ortho
 
