@@ -2,3 +2,7 @@ lab.env
 .bin
 .kube
 *.ova
+fs-ca.crt
+fs-remote-client.crt
+fs-remote-client.key
+tls-auth.key
