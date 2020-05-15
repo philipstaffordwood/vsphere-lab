@@ -1,10 +1,18 @@
+//
+//
 = Flanksource Lab VPN Architecture
 :toc:
 :toc-placement!:
+:stylesheet: ./css/material-blue.css
 
+// We include a separate file with sensitive information
+// defines as attributes for use by asciidoc
 include::sensitive-vpn.asciidoc[]
-// Front matter
+//TODO: inclusion
+:plantuml-config: ./sensitive-networking.puml
+This document describes the Flanksource Lab VPN architecture.
 
+:blockdiag-fontpath:
 toc::[]
 
 ifdef::env-github[]
@@ -29,10 +37,11 @@ from this document. These appear as placeholders `{ LABEL }`.
 To have this information restored locally,
 download `sensitive-vpn.asciidoc`
 from 1Password and place in `doc/`.
+View with asciidoc capable viewer, e.g. VS Code with
 ====
 endif::[]
 
-== Overview
+=== Overview
 
 The lab consists of several {boxvendor} boxes (currently {num_hosts}), each with VMWare ESX installed.
 The ESX hosts are joined into a vSphere domain with the vSphere Appliance deployed on the first ESX host.
@@ -51,50 +60,50 @@ endif::[]
 ifndef::env-github[]
 [plantuml, diagram-host-networking, png]
 ....
-Title Host Networking
-left to right direction
-skinparam linetype ortho
+    Title Host Networking
+    left to right direction
+    skinparam linetype ortho
 
-node "ESX box                                                            \n" {
-    card "NIC" as nic #gray {
-        card "primary MAC" as mac1 #lightgray
-        card "secondary MAC" as mac2 #lightgray
+    node "ESX box                                                            \n" {
+        card "NIC" as nic #gray {
+            card "primary MAC" as mac1 #lightgray
+            card "secondary MAC" as mac2 #lightgray
+        }
+
+        frame "ESX host  " as esx #lightgray {
+            rectangle "pfsense" as fw
+
+
+        }
+
     }
 
-    frame "ESX host  " as esx #lightgray {
-        rectangle "pfsense" as fw
-
-
+    cloud "\n\n     Internet        " as internet {
+        interface "Primary\nPublic IP" as ip1
+        interface "Secondary\nPublic IP" as ip2
     }
 
-}
-
-cloud "\n\n     Internet        " as internet {
-    interface "Primary\nPublic IP" as ip1
-    interface "Secondary\nPublic IP" as ip2
-}
 
 
+    fw -[#blue,bold]- mac2
 
-fw -[#blue,bold]- mac2
-
-esx -[#darkred,bold]- mac1
+    esx -[#darkred,bold]- mac1
 
 
-mac1 -[#darkred,bold]- ip1
-mac2 -[#blue,bold]- ip2
+    mac1 -[#darkred,bold]- ip1
+    mac2 -[#blue,bold]- ip2
 
-note right of ip1
-Used for
-ESX Management
-end note
+    note right of ip1
+    Used for
+    ESX Management
+    end note
 
-note right of ip2
-Used for
-pfsense management
-and
-OpenVPN VPN
-end note
+    note right of ip2
+    Used for
+    pfsense management
+    and
+    OpenVPN VPN
+    end note
 ....
 endif::[]
 
@@ -107,7 +116,74 @@ endif::[]
 
 |===
 
+//TODO: link to hetzner robot
+
 === ESX Networking Config
+
+The ESX network config follows the configuration described in the pfSense Documentation for ESX <<pfSense-ESX-Documentation>>
+
+The ESX host is configured to have a **bridge** and a **VM Network**.
+
+The **VM Network** is purely internal and serves provisioned VMs.
+
+The **bridge** network is connected to the host NIC and is associated with
+the extra provisioned MAC address and secondary IP.
+
+A pfSense VM is connected to both networks and serves as a network appliance that is used to provide various services:
+
+* It acts as a DHCP host to VMs provisioned to connect to the **VM Network**,
+* It serves as a firewall between the **VM Network** and the outside world, and
+* It acts as an OpenVPN server that is configured to connect the different ESX host VM Networks
+to each other and allows for remote access via an externally accessible VPN.
+
+ifdef::env-github[]
+image::diagram-esx-networking.png[Host Networking]
+endif::[]
+ifndef::env-github[]
+[plantuml, diagram-esx-networking, svg]
+....
+    skinparam linetype ortho
+
+    Title ESX Networking
+    node "ESX box                                                            \n" {
+        card "NIC" as nic #gray {
+            card "primary MAC" as mac1 #lightgray
+            card "secondary MAC" as mac2 #lightgray
+        }
+
+        frame "ESX host  " as esx #lightgray {
+            rectangle "pfsense" as fw
+            queue "bridge" as net_bridge #lightblue
+            queue "VM Network" as net_vm_net #lightgreen
+
+            collections "Other VMs" as other #lightgreen
+        }
+
+    }
+
+    cloud "\n\n     Internet        " as internet {
+        interface "Primary\nPublic IP" as ip1
+        interface "Secondary\nPublic IP" as ip2
+    }
+
+    net_vm_net -[#darkgreen,bold] fw
+
+    net_vm_net -[#darkgreen,bold]- other
+
+    fw -[#blue,bold]- net_bridge
+
+    esx -[#darkred,bold]- mac1
+    net_bridge -[#blue,bold]- mac2
+
+    mac1 -[#darkred,bold]-- ip1
+    mac2 -[#blue,bold]-- ip2
+....
+endif::[]
+
+//TODO: table of networks?
+
+The two networks are configured by using two vSwitches and two port groups
+as follows:
 
 In ESX there are two vSwitches defined:
 
@@ -119,63 +195,157 @@ Two port groups are defined (besides the built-in management port group):
 * **bridge**, which connects to the secondary IP on the NIC, and
 * **VM Network**, which is purely internal.
 
-This follows the configuration described in the pfSense Documentation for ESX <<pfSense-ESX-Documentation>>
+== pfSense Config
 
-A pfSense VM is connected to both the **bridge** and **VM Network**.
+=== Interface Assignments
 
-The pfSense VM serves as a network appliance that is used to provide various services:
+The pfSense Has two Interfaces, one for the ESX **bridge**
+network and another one for the ESX **VM Network**.
 
-* It acts as a DHCP host to VMs provisioned to connect to the **VM Network**,
-* It serves as a firewall between the **VM Network** and the outside world, and
-* It acts as an OpenVPN server that is configured to connect the different ESX host VM Networks
-to each other and allows for remote access via an externally accessible VPN.
+They are assigned as follows:
+
+* **WAN** interface connecting to **bridge** network, and
+* **LAN** interface connecting to **VM Network**.
+
+The IP of the pfSense VM on the **bridge** network
+
+.pfSense Interface Configs
+|===
+|ESX Host |Interface | Network Port | MAC | Subnet | IP
+
+.2+| *{esx_1}* | `WAN`| `vmx0` | `{mac2_1}` | _not applicable_ | `{ip2_1}`
+
+   | `LAN` | `vmx1` | _not important_ | `{lan_subnet_1}` | `{lan_gw_1}`
+
+.2+| *{esx_2}* | `WAN`| `vmx0` | `{mac2_2}` | _not applicable_ | `{ip2_2}`
+
+   | `LAN` | `vmx1` | _not important_ | `{lan_subnet_2}` | `{lan_gw_2}`
+
+|===
+//TODO: merge columns with asciidoc tables
+
 
 ifdef::env-github[]
-image::diagram-host-networking.png[Host Networking]
+image::diagram-pfsense-networking.png[Host Networking]
 endif::[]
 ifndef::env-github[]
-[plantuml, diagram-esx-networking, png]
+[plantuml, diagram-pfsense-networking, png]
 ....
-skinparam linetype ortho
+    skinparam linetype ortho
 
-node "ESX box                                                            \n" {
+
     card "NIC" as nic #gray {
-        card "primary MAC" as mac1 #lightgray
         card "secondary MAC" as mac2 #lightgray
     }
 
     frame "ESX host  " as esx #lightgray {
-        rectangle "pfsense" as fw
-        queue "bridge" as net_bridge #lightblue
-        queue "VM Network" as net_vm_net #lightgreen
+        frame "pfsense" as fw {
+            card "LAN" as lan
+            card "WAN" as wan
+            lan -[hidden] wan : layout\nhack
 
-        collections "Other VMs" as other #lightgreen
+
+        }
+        queue "bridge" as net_bridge #lightblue
+
+        cloud " " as net_cloud #lightgreen {
+            queue "VM Network" as net_vm_net #lightgreen
+            interface "Gateway IP" as ip
+            ip -[hidden]- net_cloud
+        }
+
+
+
     }
 
-}
+
 
 cloud "\n\n     Internet        " as internet {
-    interface "Primary\nPublic IP" as ip1
+
     interface "Secondary\nPublic IP" as ip2
 }
 
-net_vm_net -[#darkgreen,bold] fw
+ip -[#darkgreen,bold] lan
 
-net_vm_net -[#darkgreen,bold]- other
 
-fw -[#blue,bold]- net_bridge
 
-esx -[#darkred,bold]- mac1
+wan -[#blue,bold]- net_bridge
+
+
 net_bridge -[#blue,bold]- mac2
 
-mac1 -[#darkred,bold]-- ip1
-mac2 -[#blue,bold]-- ip2
+
+mac2 -[#blue,bold] ip2
 ....
 endif::[]
 
 
 
+== OpenVPN Config
 
+ifdef::env-github[]
+image::diagram-vpn-networking.png[Host Networking]
+endif::[]
+ifndef::env-github[]
+[plantuml, diagram-vpn-networking, png]
+....
+    Title pfSense OpenVPN Config
+
+    left to right direction
+
+    skinparam linetype ortho
+    'skinparam padding 8
+
+
+    cloud "\nInternet\n\n" as internet #lightyellow {
+        queue "VPN\n$vpn_subnet " as vpn_net #lightgreen
+
+    }
+
+    internet -[hidden]down- vpn_net
+
+
+    node "Remote Client" as client {
+        rectangle "OpenVPN Client" as vpn_client #lightblue
+    }
+
+
+
+    queue "ESX1 VM Network\n$lan_subnet_1  "  as esx1_net #lightgreen {
+    }
+    node "ESX1 \npfSense \nOpenVPN Server" as fw_1 #lightblue
+
+
+    queue "ESX2 VM Network\n$lan_subnet_2  " as esx2_net #lightgreen {
+    }
+    node "ESX2 \npfSense \nOpenVPN Client" as fw_2 #lightblue
+
+    rectangle "future" #lightgray {
+        queue "ESX3 VM Network\n$lan_subnet_2  " as esx3_net #lightgray {
+        }
+        node "ESX3 \npfSense \nOpenVPN Client" as fw_3 #lightgray
+    }
+
+    vpn_net -[#blue,bold]-- vpn_client
+    internet -[#red,dashed]-- vpn_client
+
+    esx1_net -- fw_1
+    fw_1 -[#blue,bold]- vpn_net
+    fw_1 --[#red,dashed]- internet
+
+    esx2_net -- fw_2
+    fw_2 -[#blue,bold]- vpn_net
+    fw_2 --[#red,dashed]- internet
+
+    esx3_net -- fw_3
+    fw_3 -[#lightgray,dotted]- vpn_net
+    fw_3 --[#lightgray,dotted]-- internet
+
+    fw_1 -right- fw_2
+    fw_2 -right-- fw_3
+
+....
+endif::[]
 
 
 [glossary]
@@ -191,3 +361,5 @@ NIC:: A Network interface card (NIC) is a component that provides networking cap
 == References
 
 - [[[pfSense-ESX-Documentation,1]]] https://docs.netgate.com/pfsense/en/latest/virtualization/virtualizing-pfsense-with-vmware-vsphere-esxi.html[*Virtualizing pfSense with VMware vSphere / ESXi*].
+
+- [[[pfSense-site-to-site-tls,2]]] https://docs.netgate.com/pfsense/en/latest/book/openvpn/site-to-site-example-configuration-ssl-tls.html[*Site-to-Site Example Configuration (SSL/TLS)*].
