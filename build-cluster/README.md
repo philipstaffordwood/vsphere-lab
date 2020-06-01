@@ -11,7 +11,7 @@ Create a Personal Access Token (PAT) on Github [Here](https://github.com/setting
 
 **Generate new token** with `repo` scopes:
 
-![PAT Scopes](./PAT-scopes.png)
+![PAT Scopes](PAT-scopes.png)
 
 Copy the generate PAT and set the environment variables `GH_PAT` to it's value
 
