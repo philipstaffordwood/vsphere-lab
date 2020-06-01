@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: github-runner
+  labels:
+    app: github-runner
+spec:
+  # The replicas is tuneable, but at least 1 is required
+  replicas: 4
+  selector:
+    matchLabels:
+      app: github-runner
+  template:
+    metadata:
+      labels:
+        app: github-runner
+    spec:
+      containers:
+        - name: github-runner
+          image: sanderknape/github-runner:latest
+          env:
+            - name: GITHUB_OWNER
+              #value: flanksource
+              value: philipstaffordwood
+            - name: GITHUB_REPOSITORY
+              #value: karina
+              value: platform-cli
+            - name: GITHUB_PAT # stored separately in a Kubernetes Secret
+              valueFrom:
+                secretKeyRef:
+                  name: gh-pats
+                  key: pat-fs-karina

@@ -3,7 +3,8 @@
 ##
 
 ## Cluster name
-name: build-cluster
+name: builder-cluster
+domain: builder-cluster.lab.flanksource.com
 
 ## Prefix to be added to VM hostnames
 hostPrefix: build-k8s
