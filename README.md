@@ -28,7 +28,7 @@ sudo openvpn config.openvpn
 1. Configure `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID` with access to the SOPS KMS key.
 (this can also be done with a [credentials file](https://docs.aws.amazon.com/sdk-for-php/v3/developer-guide/guide_credentials_profiles.html))
 
-2. Start a session in a subshell with the environment variables set by running: `sops exec-env lab.enc.env '/bin/bash'`
+2. Source the environment variables by running: `source /dev/stdin < <( sops -d --input-type binary --output-type binary lab.enc.env )`
 
 3. Run
 
@@ -40,10 +40,9 @@ kubectl get nodes
 
 ### Updating environment variables:
 
-1. Decrypt environment vars to `lab.env` with `sops -d lab.enc.env > lab.env`
-2. Update the file
-3. Run `sops -e lab.env > lab.enc.env`
-4. Commit `lab.enc.env` NEVER COMMIT `lab.env`
+1. Decrypt environment vars to `lab.env` and update
+2. Run `sops -e --input-type binary --output-type binary lab.env > lab.enc.env`
+3. Commit `lab.enc.env` NEVER COMMIT `lab.env`
 
 ### Lab Network Topology
 
